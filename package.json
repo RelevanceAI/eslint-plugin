@@ -1,0 +1,24 @@
+{
+  "name": "@soorria/eslint",
+  "version": "0.0.0",
+  "description": "eslint stuff",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "files": [
+    "src"
+  ],
+  "private": false,
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write ."
+  },
+  "keywords": [],
+  "author": "Soorria Saruva <soorria.ss@gmail.com> (https://soorria.com/)",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2"
+  }
+}
