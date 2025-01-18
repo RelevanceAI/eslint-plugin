@@ -12,12 +12,15 @@
   "sideEffects": false,
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "release": "pnpm run build && changeset publish",
+    "changeset": "changeset"
   },
   "keywords": [],
   "author": "Soorria Saruva <soorria.ss@gmail.com> (https://soorria.com/)",
   "license": "MIT",
   "devDependencies": {
+    "@changesets/cli": "^2.27.11",
     "eslint": "^9.18.0",
     "prettier": "^3.4.2"
   }
