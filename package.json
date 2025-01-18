@@ -1,5 +1,5 @@
 {
-  "name": "@soorria/eslint",
+  "name": "@soorria/eslint-plugin",
   "version": "0.1.0",
   "description": "eslint stuff",
   "type": "commonjs",
