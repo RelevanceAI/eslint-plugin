@@ -1,4 +1,4 @@
-# @soorria/eslint
+# @relevanceai/eslint-plugin
 
 ## 0.1.0
 
