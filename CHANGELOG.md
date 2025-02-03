@@ -1,5 +1,11 @@
 # @relevanceai/eslint-plugin
 
+## 0.3.0
+
+### Minor Changes
+
+- 0000000: feat: add prefer-function-as-describe-label rule
+
 ## 0.2.0
 
 ### Minor Changes
