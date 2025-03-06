@@ -1,5 +1,11 @@
 # @relevanceai/eslint-plugin
 
+## 0.4.0
+
+### Minor Changes
+
+- 24a417e: fix: make expect and vitest rule work more
+
 ## 0.3.0
 
 ### Minor Changes
