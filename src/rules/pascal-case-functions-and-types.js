@@ -4,10 +4,6 @@
 module.exports = {
   meta: {
     type: 'problem',
-    docs: {
-      description: 'TODO',
-    },
-    schema: [],
   },
   create(context) {
     return {
@@ -102,79 +98,61 @@ function isRHSFunction(rhs) {
   if (
     rhs.type === 'MemberExpression' &&
     !rhs.computed &&
-    rhs.property.type === "Identifier" &&
-    
+    rhs.property.type === 'Identifier' &&
     isPascalCase(rhs.property.name)
   ) {
     return true
   }
 
-  if (rhs.type === 'CallExpression') {
-    let currentCall = rhs
-    while (true) {
-      if (
-        currentCall.callee.type === 'MemberExpression' &&
-        !currentCall.callee.computed
-      ) {
-        if (
-          currentCall.callee.object.type === 'Identifier' &&
-          currentCall.callee.object.name === 'vi' &&
-          currentCall.callee.property.type === 'Identifier' &&
-          currentCall.callee.property.name === 'mocked' &&
-          currentCall.arguments.length === 1
-        ) {
-          if (
-            currentCall.arguments[0]?.type === 'Identifier' &&
-            isPascalCase(currentCall.arguments[0].name)
-          ) {
-            return true
-          }
-
-          const argument = currentCall.arguments[0]
-          if (
-            argument?.type === 'MemberExpression' &&
-            !argument.computed &&
-            argument.property.type === 'Identifier' &&
-            isPascalCase(argument.property.name)
-          ) {
-            return true
-          }
-        }
-
-        if (currentCall.callee.object.type === 'CallExpression') {
-          currentCall = currentCall.callee.object
-          continue
-        }
-      }
-
-      break
+  /**
+   * @param {import("estree").CallExpression} call
+   */
+  function getLeftMostCall(call) {
+    while (
+      call.callee.type === 'MemberExpression' &&
+      call.callee.object.type === 'CallExpression'
+    ) {
+      call = call.callee.object
     }
+    return call
   }
 
   if (rhs.type === 'CallExpression') {
-    let currentCall = rhs
-    while (true) {
+    const leftMostCall = getLeftMostCall(rhs)
+
+    if (
+      leftMostCall.callee.type === 'MemberExpression' &&
+      !leftMostCall.callee.computed &&
+      leftMostCall.callee.object.type === 'Identifier' &&
+      leftMostCall.callee.object.name === 'vi' &&
+      leftMostCall.callee.property.type === 'Identifier'
+    ) {
       if (
-        currentCall.callee.type === 'MemberExpression' &&
-        !currentCall.callee.computed
+        leftMostCall.callee.property.name === 'mocked' &&
+        leftMostCall.arguments.length === 1
       ) {
-        if (
-          currentCall.callee.object.type === 'Identifier' &&
-          currentCall.callee.object.name === 'vi' &&
-          currentCall.callee.property.type === 'Identifier' &&
-          currentCall.callee.property.name === 'fn' &&
-          currentCall.arguments.length <= 1
-        ) {
+        const argument = leftMostCall.arguments[0]
+
+        if (argument?.type === 'Identifier' && isPascalCase(argument.name)) {
           return true
         }
 
-        if (currentCall.callee.object.type === 'CallExpression') {
-          currentCall = currentCall.callee.object
-          continue
+        if (
+          argument?.type === 'MemberExpression' &&
+          !argument.computed &&
+          argument.property.type === 'Identifier' &&
+          isPascalCase(argument.property.name)
+        ) {
+          return true
         }
       }
 
-      break
+      if (
+        leftMostCall.callee.property.name === 'fn' &&
+        leftMostCall.arguments.length <= 1
+      ) {
+        return true
+      }
     }
   }
 
