@@ -64,7 +64,8 @@ module.exports = {
             (parent.property.name === 'mockResolvedValue' ||
               parent.property.name === 'mockResolvedValueOnce' ||
               parent.property.name === 'mockReturnValue' ||
-              parent.property.name === 'mockReturnValueOnce')
+              parent.property.name === 'mockReturnValueOnce' ||
+              parent.property.name === 'mockImplementation')
           ) {
             const grandparent = parent.parent
             if (
