@@ -102,7 +102,8 @@ module.exports = {
                 grandparent?.type === 'MemberExpression' &&
                 grandparent.property.type === 'Identifier' &&
                 (grandparent.property.name === 'toHaveBeenCalledTimes' ||
-                  grandparent.property.name === 'toHaveBeenCalledWith')
+                  grandparent.property.name === 'toHaveBeenCalledWith' ||
+                  grandparent.property.name === 'toHaveBeenCalledOnce')
               ) {
                 const greatGrandParent = grandparent.parent
                 if (
