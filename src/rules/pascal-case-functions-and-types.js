@@ -8,121 +8,125 @@ module.exports = {
   create(context) {
     return {
       VariableDeclarator(node) {
-        if (node.id.type !== 'Identifier') {
-          return
-        }
+        if (node.id.type === 'Identifier') {
+          if (node.init && isRHSFunction(node.init)) {
+            const name = node.id.name
+            checkAndReport(context, [node.id], name)
 
-        const name = node.id.name
-
-        if (node.init && isRHSFunction(node.init)) {
-          checkAndReport(context, node, name)
-
-          return
+            return
+          }
         }
 
         const sourceCode = context.sourceCode
-        const scope = sourceCode.getScope(node.id)
-        const variable = scope.variables.find((v) => v.name === name)
-
-        if (!variable) {
-          return
-        }
-
-        const isCalled = variable.references.some((r) => {
-          const parent = r.identifier.parent
-          return (
-            parent.type === 'CallExpression' && parent.callee === r.identifier
+        const variables = sourceCode.getDeclaredVariables(node)
+        for (const variable of variables) {
+          checkVariable(
+            context,
+            variable.name,
+            variable.identifiers,
+            variable.references,
           )
-        })
-
-        if (isCalled) {
-          checkAndReport(context, node, name)
-        }
-
-        const isAssignedAFunction = variable.references.some((r) => {
-          const parent = r.identifier.parent
-          if (
-            parent.type === 'AssignmentExpression' &&
-            parent.left === r.identifier
-          ) {
-            if (isRHSFunction(parent.right)) {
-              return true
-            }
-          }
-        })
-
-        if (isAssignedAFunction) {
-          checkAndReport(context, node, name)
-        }
-
-        // const something = vi.mocked(...);
-        // something.mockImplementation(...);
-        const hasKnownViTestFunctionMockCall = variable.references.some((r) => {
-          const parent = r.identifier.parent
-          if (
-            parent.type === 'MemberExpression' &&
-            !parent.computed &&
-            parent.object === r.identifier &&
-            (parent.property.name === 'mockResolvedValue' ||
-              parent.property.name === 'mockResolvedValueOnce' ||
-              parent.property.name === 'mockReturnValue' ||
-              parent.property.name === 'mockReturnValueOnce' ||
-              parent.property.name === 'mockImplementation' ||
-              parent.property.name === 'mockImplementationOnce' ||
-              parent.property.name === 'mockRejectedValue' ||
-              parent.property.name === 'mockRejectedValueOnce' ||
-              parent.property.name === 'mockReturnThis')
-          ) {
-            const grandparent = parent.parent
-            if (
-              grandparent.type === 'CallExpression' &&
-              grandparent.callee === parent
-            ) {
-              return true
-            }
-          }
-        })
-
-        if (hasKnownViTestFunctionMockCall) {
-          checkAndReport(context, node, name)
-        }
-
-        const usedInExpectToHaveBeenCalledTimes = variable.references.some(
-          (r) => {
-            const parent = r.identifier.parent
-            if (
-              parent.type === 'CallExpression' &&
-              parent.callee.type === 'Identifier' &&
-              parent.callee.name === 'expect' &&
-              parent.arguments.length === 1 &&
-              parent.arguments.includes(r.identifier)
-            ) {
-              const grandparent = parent.parent
-              if (
-                grandparent?.type === 'MemberExpression' &&
-                grandparent.property.type === 'Identifier' &&
-                (grandparent.property.name === 'toHaveBeenCalledTimes' ||
-                  grandparent.property.name === 'toHaveBeenCalledWith' ||
-                  grandparent.property.name === 'toHaveBeenCalledOnce')
-              ) {
-                const greatGrandParent = grandparent.parent
-                if (
-                  greatGrandParent?.type === 'CallExpression' &&
-                  greatGrandParent.callee === grandparent
-                ) {
-                  return true
-                }
-              }
-            }
-          },
-        )
-
-        if (usedInExpectToHaveBeenCalledTimes) {
-          checkAndReport(context, node, name)
         }
       },
     }
   },
+}
+
+/**
+ * @param {import("eslint").Rule.RuleContext} context
+ * @param {string} name
+ * @param {import("estree").Identifier[]} bindingIdentifiers
+ * @param {import("eslint").Scope.Reference[]} references
+ */
+function checkVariable(context, name, bindingIdentifiers, references) {
+  const isCalled = references.some((r) => {
+    const parent = r.identifier.parent
+    return parent.type === 'CallExpression' && parent.callee === r.identifier
+  })
+
+  if (isCalled) {
+    checkAndReport(context, bindingIdentifiers, name)
+  }
+
+  const isAssignedAFunction = references.some((r) => {
+    const parent = r.identifier.parent
+    if (
+      parent.type === 'AssignmentExpression' &&
+      parent.left === r.identifier
+    ) {
+      if (isRHSFunction(parent.right)) {
+        return true
+      }
+    }
+  })
+
+  if (isAssignedAFunction) {
+    checkAndReport(context, bindingIdentifiers, name)
+  }
+
+  // const something = vi.mocked(...);
+  // something.mockImplementation(...);
+  const hasKnownViTestFunctionMockCall = references.some((r) => {
+    const parent = r.identifier.parent
+    if (
+      parent.type === 'MemberExpression' &&
+      !parent.computed &&
+      parent.object === r.identifier &&
+      (parent.property.name === 'mockResolvedValue' ||
+        parent.property.name === 'mockResolvedValueOnce' ||
+        parent.property.name === 'mockReturnValue' ||
+        parent.property.name === 'mockReturnValueOnce' ||
+        parent.property.name === 'mockImplementation' ||
+        parent.property.name === 'mockImplementationOnce' ||
+        parent.property.name === 'mockRejectedValue' ||
+        parent.property.name === 'mockRejectedValueOnce' ||
+        parent.property.name === 'mockReturnThis')
+    ) {
+      const grandparent = parent.parent
+      if (
+        grandparent.type === 'CallExpression' &&
+        grandparent.callee === parent
+      ) {
+        return true
+      }
+    }
+  })
+
+  if (hasKnownViTestFunctionMockCall) {
+    checkAndReport(context, bindingIdentifiers, name)
+  }
+
+  const usedInExpectToHaveBeenCalledTimes = references.some((r) => {
+    const parent = r.identifier.parent
+    if (
+      parent.type === 'CallExpression' &&
+      parent.callee.type === 'Identifier' &&
+      parent.callee.name === 'expect' &&
+      parent.arguments.length === 1 &&
+      parent.arguments.includes(r.identifier)
+    ) {
+      const grandparent = parent.parent
+      if (
+        grandparent?.type === 'MemberExpression' &&
+        grandparent.property.type === 'Identifier' &&
+        (grandparent.property.name === 'toHaveBeenCalledTimes' ||
+          grandparent.property.name === 'toHaveBeenCalledWith' ||
+          grandparent.property.name === 'toHaveBeenCalledOnce')
+      ) {
+        const greatGrandParent = grandparent.parent
+        if (
+          greatGrandParent?.type === 'CallExpression' &&
+          greatGrandParent.callee === grandparent
+        ) {
+          return true
+        }
+      }
+    }
+  })
+
+  if (usedInExpectToHaveBeenCalledTimes) {
+    checkAndReport(context, bindingIdentifiers, name)
+  }
 }
 
 /**
@@ -213,14 +217,16 @@ function isPascalCase(name) {
 
 /**
  * @param {import("eslint").Rule.RuleContext} context
- * @param {import("estree").Node} node
+ * @param {import("estree").Identifier[]} bindingIdentifiers
  * @param {string} name
  */
-function checkAndReport(context, node, name) {
+function checkAndReport(context, bindingIdentifiers, name) {
   if (!isPascalCase(name)) {
-    context.report({
-      node,
-      message: `Function variable '${name}' must have PascalCase name`,
-    })
+    for (const bindingIdentifier of bindingIdentifiers) {
+      context.report({
+        node: bindingIdentifier,
+        message: `Function variable '${name}' must have PascalCase name`,
+      })
+    }
   }
 }
