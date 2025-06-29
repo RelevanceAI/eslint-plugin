@@ -18,4 +18,19 @@ TODO?
 
 ### pascal-case
 
-TODO?
+This rule errors when a variable, containing a function, doesn't have a PascalCase name.
+The rule was written to replace @typescript-eslint/naming-convention for our needs, since it was taking up about 25 seconds, or about 40%, of the time taken to lint one of our repos.
+
+Bad:
+
+```js
+const foo = () => {}
+```
+
+Good:
+
+```js
+const Foo = () => {}
+```
+
+We intentionally don't generate fixes for the naming violations, since that would require analysing which parts of a variable are words/acronyms.
