@@ -25,8 +25,9 @@ The hardcoded cases for Vitest are:
     - mockRejectedValueOnce
     - mockReturnThis
   - vi.fn()
-  - vi.mocked().X() where X is one of the methods that are only called on mocked
-    functions.
+  - vi.mocked(X) or vi.mocked(obj.X) where X is a PascalCase identifier.
+  - vi.mocked().X() where X is one of the above methods that are only called on
+    mocked functions.
   - expect(foo).X(), where X is one of the methods that are only called on
     expect for functions:
     - toHaveBeenCalledTimes
@@ -72,6 +73,11 @@ as the initial value.
     a PascalCase identifier, or a MemberExpression with a PascalCase property:
       const foo = vi.mocked(SomeFunction);
       const foo = vi.mocked(obj.SomeFunction);
+
+    3. A MemberExpression of the form `vi.mocked()` and the call must have been
+    nested in a MemberExpression chain in the RHS (which means there is at least
+    one known Vitest function mocking method):
+      const foo = vi.mocked(blah).mockRejectedValue();
 
 Usage based cases:
 Case 2:
@@ -298,6 +304,11 @@ function isRHSFunction(rhs, knownFunctionFactories) {
       KNOWN_VITEST_FUNCTION_MOCK_METHODS,
     )
 
+    // If the resulting call is not the one we passed in, it must have been
+    // nested in MemberExpressions. Since we only follow MemberExpressions whose
+    // properties are known Vitest function mock methods, we must have seen one.
+    const hasKnownViTestFunctionMockCall = leftMostCall !== rhs
+
     if (
       leftMostCall.callee.type === 'MemberExpression' &&
       !leftMostCall.callee.computed &&
@@ -313,11 +324,17 @@ function isRHSFunction(rhs, knownFunctionFactories) {
         return true
       }
 
-      // Case 1.d.2.
+      // Case 1.d.2-3.
       if (
         leftMostCall.callee.property.name === 'mocked' &&
         leftMostCall.arguments.length === 1
       ) {
+        // Case 1.d.3.
+        if (hasKnownViTestFunctionMockCall) {
+          return true
+        }
+
+        // Case 1.d.2.
         const argument = leftMostCall.arguments[0]
 
         if (argument?.type === 'Identifier' && isPascalCase(argument.name)) {
