@@ -183,7 +183,8 @@ function checkVariable(
 ) {
   // Case 2.a.
   const isCalled = references.some((r) => {
-    const parent = r.identifier.parent
+    const parent = /** @type {import('eslint').Rule.Node} */ (r.identifier)
+      .parent
     return parent.type === 'CallExpression' && parent.callee === r.identifier
   })
 
@@ -193,7 +194,8 @@ function checkVariable(
 
   // Case 1. for assignments.
   const isAssignedAFunction = references.some((r) => {
-    const parent = r.identifier.parent
+    const parent = /** @type {import('eslint').Rule.Node} */ (r.identifier)
+      .parent
     if (
       parent.type === 'AssignmentExpression' &&
       parent.left === r.identifier
@@ -210,10 +212,12 @@ function checkVariable(
 
   // Case 2.b.
   const hasKnownViTestFunctionMockCall = references.some((r) => {
-    const parent = r.identifier.parent
+    const parent = /** @type {import('eslint').Rule.Node} */ (r.identifier)
+      .parent
     if (
       parent.type === 'MemberExpression' &&
       !parent.computed &&
+      parent.property.type === 'Identifier' &&
       parent.object === r.identifier &&
       KNOWN_VITEST_FUNCTION_MOCK_METHODS.has(parent.property.name)
     ) {
@@ -231,35 +235,12 @@ function checkVariable(
     checkAndReport(context, bindingIdentifiers, name)
   }
 
-  // /**
-  //  * @param {import("eslint").Rule.RuleContext} context
-  //  * @param {import('estree').Node} node
-  //  */
-  // function isVitestExpect(context, node) {
-  //   if (node.type !== 'Identifier' || node.name !== 'expect') {
-  //     return false
-  //   }
-  //   const scope = context.sourceCode.getScope(node)
-  //   const variable = scope.variables.find((v) => v.name === node.name)
-  //   if (!variable) {
-  //     return false
-  //   }
-  //   return variable.defs.some((def) => {
-  //     return (
-  //       def.type === 'ImportBinding' &&
-  //       def.parent?.type === 'ImportDeclaration' &&
-  //       def.parent.source.type === 'Literal' &&
-  //       def.parent.source.value === 'vitest'
-  //     )
-  //   })
-  // }
-
   // Case 2.c.
   const usedInExpectToHaveBeenCalledTimes = references.some((r) => {
-    const parent = r.identifier.parent
+    const parent = /** @type {import('eslint').Rule.Node} */ (r.identifier)
+      .parent
     if (
       parent.type === 'CallExpression' &&
-      // isVitestExpect(context, parent.callee) &&
       parent.callee.type === 'Identifier' &&
       parent.callee.name === 'expect' &&
       parent.arguments.length === 1 &&
