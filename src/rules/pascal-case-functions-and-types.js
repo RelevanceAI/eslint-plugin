@@ -65,7 +65,9 @@ module.exports = {
               parent.property.name === 'mockResolvedValueOnce' ||
               parent.property.name === 'mockReturnValue' ||
               parent.property.name === 'mockReturnValueOnce' ||
-              parent.property.name === 'mockImplementation')
+              parent.property.name === 'mockImplementation' ||
+              parent.property.name === 'mockRejectedValue' ||
+              parent.property.name === 'mockRejectedValueOnce')
           ) {
             const grandparent = parent.parent
             if (
@@ -78,6 +80,39 @@ module.exports = {
         })
 
         if (hasKnownViTestFunctionMockCall) {
+          checkAndReport(context, node, name)
+        }
+
+        const usedInExpectToHaveBeenCalledTimes = variable.references.some(
+          (r) => {
+            const parent = r.identifier.parent
+            if (
+              parent.type === 'CallExpression' &&
+              parent.callee.type === 'Identifier' &&
+              parent.callee.name === 'expect' &&
+              parent.arguments.length === 1 &&
+              parent.arguments.includes(r.identifier)
+            ) {
+              const grandparent = parent.parent
+              if (
+                grandparent?.type === 'MemberExpression' &&
+                grandparent.property.type === 'Identifier' &&
+                (grandparent.property.name === 'toHaveBeenCalledTimes' ||
+                  grandparent.property.name === 'toHaveBeenCalledWith')
+              ) {
+                const greatGrandParent = grandparent.parent
+                if (
+                  greatGrandParent?.type === 'CallExpression' &&
+                  greatGrandParent.callee === grandparent
+                ) {
+                  return true
+                }
+              }
+            }
+          },
+        )
+
+        if (usedInExpectToHaveBeenCalledTimes) {
           checkAndReport(context, node, name)
         }
       },
