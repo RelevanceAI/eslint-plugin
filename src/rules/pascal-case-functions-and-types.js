@@ -15,15 +15,15 @@ repo.
 
 The hardcoded cases for Vitest are:
   - methods that are only called on mocked functions:
-    -mockResolvedValue
-    -mockResolvedValueOnce
-    -mockReturnValue
-    -mockReturnValueOnce
-    -mockImplementation
-    -mockImplementationOnce
-    -mockRejectedValue
-    -mockRejectedValueOnce
-    -mockReturnThis
+    - mockResolvedValue
+    - mockResolvedValueOnce
+    - mockReturnValue
+    - mockReturnValueOnce
+    - mockImplementation
+    - mockImplementationOnce
+    - mockRejectedValue
+    - mockRejectedValueOnce
+    - mockReturnThis
   - vi.fn()
   - vi.mocked().X() where X is one of the methods that are only called on mocked
     functions.
@@ -84,6 +84,18 @@ Case 2:
     const foo = blah; expect(foo).toHaveBeenCalledTimes();
 
 */
+
+const KNOWN_VITEST_FUNCTION_MOCK_METHODS = new Set([
+  'mockResolvedValue',
+  'mockResolvedValueOnce',
+  'mockReturnValue',
+  'mockReturnValueOnce',
+  'mockImplementation',
+  'mockImplementationOnce',
+  'mockRejectedValue',
+  'mockRejectedValueOnce',
+  'mockReturnThis',
+])
 
 /**
  * @type {import('eslint').Rule.RuleModule}
@@ -197,15 +209,7 @@ function checkVariable(
       parent.type === 'MemberExpression' &&
       !parent.computed &&
       parent.object === r.identifier &&
-      (parent.property.name === 'mockResolvedValue' ||
-        parent.property.name === 'mockResolvedValueOnce' ||
-        parent.property.name === 'mockReturnValue' ||
-        parent.property.name === 'mockReturnValueOnce' ||
-        parent.property.name === 'mockImplementation' ||
-        parent.property.name === 'mockImplementationOnce' ||
-        parent.property.name === 'mockRejectedValue' ||
-        parent.property.name === 'mockRejectedValueOnce' ||
-        parent.property.name === 'mockReturnThis')
+      KNOWN_VITEST_FUNCTION_MOCK_METHODS.has(parent.property.name)
     ) {
       const grandparent = parent.parent
       if (
@@ -289,7 +293,10 @@ function isRHSFunction(rhs, knownFunctionFactories) {
 
   // Case 1.d.
   if (rhs.type === 'CallExpression') {
-    const leftMostCall = getLeftMostCall(rhs)
+    const leftMostCall = getLeftMostCall(
+      rhs,
+      KNOWN_VITEST_FUNCTION_MOCK_METHODS,
+    )
 
     if (
       leftMostCall.callee.type === 'MemberExpression' &&
@@ -334,11 +341,15 @@ function isRHSFunction(rhs, knownFunctionFactories) {
 
 /**
  * @param {import("estree").CallExpression} call
+ * @param {Set<string>} allowedProperties
  */
-function getLeftMostCall(call) {
+function getLeftMostCall(call, allowedProperties) {
   while (
     call.callee.type === 'MemberExpression' &&
-    call.callee.object.type === 'CallExpression'
+    call.callee.object.type === 'CallExpression' &&
+    !call.callee.computed &&
+    call.callee.property.type === 'Identifier' &&
+    allowedProperties.has(call.callee.property.name)
   ) {
     call = call.callee.object
   }
