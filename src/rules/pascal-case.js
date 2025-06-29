@@ -231,11 +231,35 @@ function checkVariable(
     checkAndReport(context, bindingIdentifiers, name)
   }
 
+  // /**
+  //  * @param {import("eslint").Rule.RuleContext} context
+  //  * @param {import('estree').Node} node
+  //  */
+  // function isVitestExpect(context, node) {
+  //   if (node.type !== 'Identifier' || node.name !== 'expect') {
+  //     return false
+  //   }
+  //   const scope = context.sourceCode.getScope(node)
+  //   const variable = scope.variables.find((v) => v.name === node.name)
+  //   if (!variable) {
+  //     return false
+  //   }
+  //   return variable.defs.some((def) => {
+  //     return (
+  //       def.type === 'ImportBinding' &&
+  //       def.parent?.type === 'ImportDeclaration' &&
+  //       def.parent.source.type === 'Literal' &&
+  //       def.parent.source.value === 'vitest'
+  //     )
+  //   })
+  // }
+
   // Case 2.c.
   const usedInExpectToHaveBeenCalledTimes = references.some((r) => {
     const parent = r.identifier.parent
     if (
       parent.type === 'CallExpression' &&
+      // isVitestExpect(context, parent.callee) &&
       parent.callee.type === 'Identifier' &&
       parent.callee.name === 'expect' &&
       parent.arguments.length === 1 &&
