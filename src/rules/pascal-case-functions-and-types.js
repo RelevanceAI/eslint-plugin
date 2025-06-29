@@ -55,6 +55,8 @@ module.exports = {
           checkAndReport(context, node, name)
         }
 
+        // const something = vi.mocked(...);
+        // something.mockImplementation(...);
         const hasKnownViTestFunctionMockCall = variable.references.some((r) => {
           const parent = r.identifier.parent
           if (
@@ -66,8 +68,10 @@ module.exports = {
               parent.property.name === 'mockReturnValue' ||
               parent.property.name === 'mockReturnValueOnce' ||
               parent.property.name === 'mockImplementation' ||
+              parent.property.name === 'mockImplementationOnce' ||
               parent.property.name === 'mockRejectedValue' ||
-              parent.property.name === 'mockRejectedValueOnce')
+              parent.property.name === 'mockRejectedValueOnce' ||
+              parent.property.name === 'mockReturnThis')
           ) {
             const grandparent = parent.parent
             if (
