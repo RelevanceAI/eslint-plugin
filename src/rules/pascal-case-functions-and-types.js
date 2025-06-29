@@ -4,12 +4,36 @@
 module.exports = {
   meta: {
     type: 'problem',
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          knownFunctionFactories: {
+            type: 'array',
+            items: { type: 'string' },
+            description:
+              'Names of function that are known to return functions.',
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
   },
   create(context) {
+    /**
+     * @type {Set<string>|undefined}
+     */
+    let knownFunctionFactories
+
+    const options = context.options[0]
+    if (options) {
+      knownFunctionFactories = new Set(options.knownFunctionFactories)
+    }
+
     return {
       VariableDeclarator(node) {
         if (node.id.type === 'Identifier') {
-          if (node.init && isRHSFunction(node.init)) {
+          if (node.init && isRHSFunction(node.init, knownFunctionFactories)) {
             const name = node.id.name
             checkAndReport(context, [node.id], name)
 
@@ -25,6 +49,7 @@ module.exports = {
             variable.name,
             variable.identifiers,
             variable.references,
+            knownFunctionFactories,
           )
         }
       },
@@ -37,8 +62,15 @@ module.exports = {
  * @param {string} name
  * @param {import("estree").Identifier[]} bindingIdentifiers
  * @param {import("eslint").Scope.Reference[]} references
+ * @param {Set<string> | undefined} knownFunctionFactories
  */
-function checkVariable(context, name, bindingIdentifiers, references) {
+function checkVariable(
+  context,
+  name,
+  bindingIdentifiers,
+  references,
+  knownFunctionFactories,
+) {
   const isCalled = references.some((r) => {
     const parent = r.identifier.parent
     return parent.type === 'CallExpression' && parent.callee === r.identifier
@@ -54,7 +86,7 @@ function checkVariable(context, name, bindingIdentifiers, references) {
       parent.type === 'AssignmentExpression' &&
       parent.left === r.identifier
     ) {
-      if (isRHSFunction(parent.right)) {
+      if (isRHSFunction(parent.right, knownFunctionFactories)) {
         return true
       }
     }
@@ -131,11 +163,20 @@ function checkVariable(context, name, bindingIdentifiers, references) {
 
 /**
  * @param {import("estree").Expression} rhs
+ * @param {Set<string> | undefined} knownFunctionFactories
  */
-function isRHSFunction(rhs) {
+function isRHSFunction(rhs, knownFunctionFactories) {
   if (
     rhs.type === 'ArrowFunctionExpression' ||
     rhs.type === 'FunctionExpression'
+  ) {
+    return true
+  }
+
+  if (
+    rhs.type === 'CallExpression' &&
+    rhs.callee.type === 'Identifier' &&
+    knownFunctionFactories?.has(rhs.callee.name)
   ) {
     return true
   }
