@@ -181,6 +181,17 @@ function checkVariable(
   references,
   knownFunctionFactories,
 ) {
+  const isDestructuringAssignmentShorthandProperty = bindingIdentifiers.some(
+    (ident) => {
+      const parent = /** @type {import('eslint').Rule.Node} */ (ident).parent
+      return parent.type === 'Property' && parent.shorthand
+    },
+  )
+
+  if (isDestructuringAssignmentShorthandProperty) {
+    return false
+  }
+
   // Case 2.a.
   const isCalled = references.some((r) => {
     const parent = /** @type {import('eslint').Rule.Node} */ (r.identifier)
