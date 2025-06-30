@@ -2,7 +2,7 @@ This package contains custom ESLint rules that we use here at [Relevance AI](htt
 
 ## Rule overviews
 
-See the implementation for more specifics.
+See the implementations for more specifics.
 
 ### no-vitest-and-expect-package
 
@@ -10,11 +10,46 @@ This rule errors when importing from both `expect` and `vitest` in the same file
 
 ### prefer-function-as-describe-label
 
-TODO?
+This rule errors when a string literal or `Function.name` is passed to Vitest's `describe` function. You should pass the function directly, so the describe block name stays in-sync with the function name.
+
+Bad:
+
+```js
+function Foo() {}
+describe('Foo', () => {})
+```
+
+```js
+function Foo() {}
+describe(Foo.name, () => {})
+```
+
+Good:
+
+```js
+function Foo() {}
+describe(Foo, () => {})
+```
 
 ### prefer-vi-mock-import-expression
 
-TODO?
+This rule errors when passing a path to `vi.mock`. You should pass an import expression instead as this:
+
+- makes `vi.mock` type-safe since we can't refer to modules that don't exist.
+- allows TypeScript to infer the correct type for the mock factory (2nd arg to `vi.mock`).
+- makes refactoring by moving files around easier since VSCode updates import expressions when you do.
+
+Bad:
+
+```js
+vi.mock('~/dependencies', () => {})
+```
+
+Good:
+
+```js
+vi.mock(import('~/dependencies'), () => {})
+```
 
 ### pascal-case
 
