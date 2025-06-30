@@ -57,11 +57,7 @@ as the initial value.
   b. RHS is a call to a known function factory (function that returns functions):
     const foo = KnownFunctionFactory();
 
-  c. RHS is a MemberExpression and the property name is PascalCase (indicating
-  that it's a function in our convention):
-    const foo = someObject.SomeFunction;
-
-  d. RHS is a CallExpression, optionally with member function calls chained onto
+  c. RHS is a CallExpression, optionally with member function calls chained onto
   it if the methods are known Vitest function mocking methods.
   The callee must be either:
     1. A MemberExpression of the form `vi.fn()`, with optionally one argument:
@@ -304,16 +300,6 @@ function isRHSFunction(rhs, knownFunctionFactories) {
   }
 
   // Case 1.c.
-  if (
-    rhs.type === 'MemberExpression' &&
-    !rhs.computed &&
-    rhs.property.type === 'Identifier' &&
-    isPascalCase(rhs.property.name)
-  ) {
-    return true
-  }
-
-  // Case 1.d.
   if (rhs.type === 'CallExpression') {
     const leftMostCall = getLeftMostCall(
       rhs,
@@ -332,7 +318,7 @@ function isRHSFunction(rhs, knownFunctionFactories) {
       leftMostCall.callee.object.name === 'vi' &&
       leftMostCall.callee.property.type === 'Identifier'
     ) {
-      // Case 1.d.1.
+      // Case 1.c.1.
       if (
         leftMostCall.callee.property.name === 'fn' &&
         leftMostCall.arguments.length <= 1
@@ -340,17 +326,17 @@ function isRHSFunction(rhs, knownFunctionFactories) {
         return true
       }
 
-      // Case 1.d.2-3.
+      // Case 1.c.2-3.
       if (
         leftMostCall.callee.property.name === 'mocked' &&
         leftMostCall.arguments.length === 1
       ) {
-        // Case 1.d.3.
+        // Case 1.c.3.
         if (hasKnownViTestFunctionMockCall) {
           return true
         }
 
-        // Case 1.d.2.
+        // Case 1.c.2.
         const argument = leftMostCall.arguments[0]
 
         if (argument?.type === 'Identifier' && isPascalCase(argument.name)) {
