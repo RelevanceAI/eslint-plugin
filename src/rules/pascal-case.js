@@ -139,6 +139,9 @@ module.exports = {
       VariableDeclarator(node) {
         // Case 1. for declarations.
         if (node.id.type === 'Identifier') {
+          if (node.init && isVitestSpyOnCall(node.init)) {
+            return
+          }
           if (node.init && isRHSFunction(node.init, knownFunctionFactories)) {
             const name = node.id.name
             checkAndReport(context, [node.id], name)
@@ -177,6 +180,14 @@ function checkVariable(
   references,
   knownFunctionFactories,
 ) {
+const isAssignedVitestSpyOnCall = references.some((ref) => {
+    return ref.writeExpr && isVitestSpyOnCall(ref.writeExpr)
+  })
+
+  if (isAssignedVitestSpyOnCall) {
+    return
+  }
+
   const isDestructuringAssignmentShorthandProperty = bindingIdentifiers.some(
     (ident) => {
       const parent = /** @type {import('eslint').Rule.Node} */ (ident).parent
@@ -359,8 +370,30 @@ function isRHSFunction(rhs, knownFunctionFactories) {
 }
 
 /**
+ * @param {import('estree').Node} node
+ */
+function isVitestSpyOnCall(node) {
+  if (node.type === 'CallExpression') {
+    const leftMostCall = getLeftMostCall(node)
+
+    if (
+      leftMostCall.callee.type === 'MemberExpression' &&
+      !leftMostCall.callee.computed &&
+      leftMostCall.callee.object.type === 'Identifier' &&
+      leftMostCall.callee.object.name === 'vi' &&
+      leftMostCall.callee.property.type === 'Identifier' &&
+      leftMostCall.callee.property.name === 'spyOn'
+    ) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
  * @param {import("estree").CallExpression} call
- * @param {Set<string>} allowedProperties
+ * @param {Set<string>=} allowedProperties
  */
 function getLeftMostCall(call, allowedProperties) {
   while (
@@ -368,7 +401,7 @@ function getLeftMostCall(call, allowedProperties) {
     call.callee.object.type === 'CallExpression' &&
     !call.callee.computed &&
     call.callee.property.type === 'Identifier' &&
-    allowedProperties.has(call.callee.property.name)
+    (!allowedProperties || allowedProperties.has(call.callee.property.name))
   ) {
     call = call.callee.object
   }
