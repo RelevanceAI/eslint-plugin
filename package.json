@@ -1,7 +1,7 @@
 {
   "name": "@relevanceai/eslint-plugin",
   "version": "0.4.0",
-  "description": "eslint stuff",
+  "description": "Relevance AI ESLint rules",
   "type": "commonjs",
   "main": "src/index.js",
   "types": "src/index.d.ts",
@@ -22,8 +22,10 @@
   "license": "MIT",
   "devDependencies": {
     "@changesets/cli": "^2.27.11",
+    "@types/estree": "^1.0.6",
     "@types/node": "^22.13.0",
     "eslint": "^9.18.0",
     "prettier": "^3.4.2"
-  }
+  },
+  "packageManager": "pnpm@10.11.1+sha512.e519b9f7639869dc8d5c3c5dfef73b3f091094b0a006d7317353c72b124e80e1afd429732e28705ad6bfa1ee879c1fce46c128ccebd3192101f43dd67c667912"
 }
