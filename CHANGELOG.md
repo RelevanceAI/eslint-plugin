@@ -1,5 +1,11 @@
 # @relevanceai/eslint-plugin
 
+## 0.5.0
+
+### Minor Changes
+
+- 9388b87: feat: add pascal-case rule
+
 ## 0.4.0
 
 ### Minor Changes
